@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: ai-backend
+  autoconfigure: #temp
+    exclude: org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration #temp
+
+#temp
+server:
+  port: 8081
