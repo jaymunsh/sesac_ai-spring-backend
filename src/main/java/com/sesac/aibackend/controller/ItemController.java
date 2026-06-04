@@ -37,7 +37,8 @@ public class ItemController {
         long id = sequence.getAndIncrement();
         Item saved = Item.builder().id(id).name(req.name()).price(req.price()).build();
         storage.put(id, saved);
-        return ResponseEntity.created(URI.create("/legacy/items/" + id)).body(ItemResponse.from(saved));
+        return ResponseEntity.created(
+                URI.create("/legacy/items/" + id)).body(ItemResponse.from(saved));
     }
 
     @PutMapping("/{id}")
