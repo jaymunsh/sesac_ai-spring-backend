@@ -5,6 +5,7 @@ import com.sesac.aibackend.dto.AccountCreateRequest;
 import com.sesac.aibackend.dto.AccountResponse;
 import com.sesac.aibackend.dto.AccountUpdateRequest;
 import com.sesac.aibackend.error.NotFoundException;
+import com.sesac.aibackend.service.AccountService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,41 +24,33 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/finance")
-public class FinanceController {
+@RequestMapping("/account")
+public class AccountController {
 
     private final Map<String, Account> storage = new ConcurrentHashMap<>();
     private final AtomicLong sequence = new AtomicLong();
 
+    private final AccountService accountService;
+
     @Operation(summary = "전체 계좌조회")
-    @GetMapping("/account/all")
-    public List<AccountResponse> getAllAccountList(){
+    @GetMapping("/list")
+    public List<AccountResponse> getAccountList(){
         return storage.values().stream().map(AccountResponse::from).toList();
     }
 
     @Operation(summary = "특정 계좌조회")
-    @GetMapping("/account/{accountNumber}")
+    @GetMapping("/{accountNumber}")
     public AccountResponse getAccount(@PathVariable String accountNumber) {
         Account account = storage.get(accountNumber);
         return AccountResponse.from(account);
     }
 
     @Operation(summary = "계좌 생성")
-    @PostMapping("/account")
+    @PostMapping()
     public ResponseEntity<AccountResponse> createAccount(@Valid @RequestBody AccountCreateRequest req) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE));
-        sb.append("000");
-        sb.replace(0, sb.length(), Long.toString(Long.parseLong(sb.toString()) + (sequence.getAndIncrement() + 1)));
 
-        String accountNumber = sb.toString();
-
-        Account account = Account.builder()
-                .accountNumber(accountNumber)
-                .accountHolder(req.accountHolder())
-                .balance(req.balance())
-                .createdDate(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
-                .build();
+        Account account = accountService.createAccount(req); // 일단 DB가 없으니
+        String accountNumber = account.getAccountNumber();
 
         storage.put(accountNumber, account);
 
@@ -65,39 +58,34 @@ public class FinanceController {
     }
 
     @Operation(summary = "입금")
-    @PutMapping("/account/deposit/{accountNumber}")
-    public AccountResponse depositAccount(@PathVariable String accountNumber, @Valid @RequestBody AccountUpdateRequest req) {
-        Account account = storage.get(accountNumber);
+    @PutMapping("/deposit")
+    public AccountResponse depositAccount(@Valid @RequestBody AccountUpdateRequest req) {
+        Account account = storage.get(req.accountNumber());
         if (account == null) {
-            throw NotFoundException.of("account", accountNumber);
+            throw NotFoundException.of("account", req.accountNumber());
         }
-        account.setBalance(account.getBalance() + req.balance());
-        account.setLastUpdatedDate(LocalDateTime.now(ZoneId.of("Asia/Seoul")));
+        accountService.depositAccount(req, account);
+
         return AccountResponse.from(account);
     }
 
     @Operation(summary = "출금")
-    @PutMapping("/account/withdraw/{accountNumber}")
-    public AccountResponse withdrawAccount(@PathVariable String accountNumber, @Valid @RequestBody AccountUpdateRequest req) {
-        Account account = storage.get(accountNumber);
+    @PutMapping("/withdraw")
+    public AccountResponse withdrawAccount(@Valid @RequestBody AccountUpdateRequest req) {
+        Account account = storage.get(req.accountNumber());
         if (account == null) {
-            throw NotFoundException.of("account", accountNumber);
+            throw NotFoundException.of("account", req.accountNumber());
         }
-        account.setBalance(account.getBalance() - req.balance());
-        account.setLastUpdatedDate(LocalDateTime.now(ZoneId.of("Asia/Seoul")));
+        accountService.withdrawAccount(req, account);
+
         return AccountResponse.from(account);
     }
 
     @Operation(summary = "계좌 삭제")
-    @DeleteMapping("/account/{accountNumber}")
+    @DeleteMapping("/{accountNumber}")
     public ResponseEntity<Void> deleteAccount(@PathVariable String accountNumber) {
-        if (storage.remove(accountNumber) == null) {
-            throw NotFoundException.of("account", accountNumber);
-        }
+        accountService.deleteAccount(accountNumber, storage);
         return ResponseEntity.noContent().build();
     }
-
-
-
 
 }
