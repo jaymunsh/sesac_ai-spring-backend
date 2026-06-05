@@ -4,56 +4,59 @@ import com.sesac.aibackend.domain.Item;
 import com.sesac.aibackend.dto.ItemRequest;
 import com.sesac.aibackend.dto.ItemResponse;
 import com.sesac.aibackend.error.NotFoundException;
-import com.sesac.aibackend.service.ItemService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 @RestController
-@RequiredArgsConstructor
-@RequestMapping("/item")
-public class ItemController {
+@RequestMapping("/legacy/items")
+public class LegacyItemController {
 
-    private final ItemService itemService;
+    private final Map<Long, Item> storage = new ConcurrentHashMap<>();
+    private final AtomicLong sequence = new AtomicLong();
 
     @GetMapping
     public List<ItemResponse> list() {
-        return itemService.findAll().stream().map(ItemResponse::from).toList();
+        return storage.values().stream().map(ItemResponse::from).toList();
     }
 
     @GetMapping("/{id}")
     public ItemResponse get(@PathVariable Long id) {
-        Item item = itemService.findById(id)
-                .orElseThrow(() -> NotFoundException.of("item", id));
+        Item item = storage.get(id);
         return ItemResponse.from(item);
     }
 
     @PostMapping
     public ResponseEntity<ItemResponse> create(@Valid @RequestBody ItemRequest req) {
-        Item saved = itemService.save(req.toEntity());
-        URI location = URI.create("/items/" + saved.getId());
-        return ResponseEntity.created(location).body(ItemResponse.from(saved));
+        long id = sequence.getAndIncrement();
+        Item saved = Item.builder().id(id).name(req.name()).price(req.price()).build();
+        storage.put(id, saved);
+        return ResponseEntity.created(
+                URI.create("/legacy/items/" + id)).body(ItemResponse.from(saved));
     }
 
     @PutMapping("/{id}")
     public ItemResponse update(@PathVariable Long id, @Valid @RequestBody ItemRequest req) {
-        Item item = itemService.findById(id)
-                .orElseThrow(() -> NotFoundException.of("item", id));
-        item.setName(req.name());
-        item.setPrice(req.price());
-        return ItemResponse.from(itemService.save(item));
+        Item existing = storage.get(id);
+        if (existing == null) {
+            throw NotFoundException.of("item", id);
+        }
+        existing.setName(req.name());
+        existing.setPrice(req.price());
+        return ItemResponse.from(existing);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        if (!itemService.existsById(id)) {
+        if (storage.remove(id) == null) {
             throw NotFoundException.of("item", id);
         }
-        itemService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 
