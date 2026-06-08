@@ -7,6 +7,17 @@ spring:
     oauth2:
       client:
         registration:
+          kakao: # ← Kakao 클라이언트 등록 정보 추가
+            client-id: ${KAKAO_CLIENT_ID:changeme-kakao-client-id}
+            client-secret: ${KAKAO_CLIENT_SECRET:changeme-kakao-client-secret}
+            redirect-uri: "{baseUrl}/login/oauth2/code/kakao"
+            authorization-grant-type: authorization_code
+            client-authentication-method: client_secret_post
+            client-name: Kakao
+            scope:
+              - openid
+              - account_email
+              - profile_nickname
           google:
             # 실제 값은 GOOGLE_CLIENT_ID/SECRET 환경변수로 주입. 자격증명 없이도 컨텍스트가
             # 기동되도록 자리표시자 기본값을 둡니다(이 값으로는 실제 구글 로그인 불가).
@@ -17,6 +28,8 @@ spring:
               - email
               - profile
         provider: # ← 추가
+          kakao:
+            issuer-uri: https://kauth.kakao.com
           google:
             authorization-uri: https://accounts.google.com/o/oauth2/v2/auth?prompt=consent
 

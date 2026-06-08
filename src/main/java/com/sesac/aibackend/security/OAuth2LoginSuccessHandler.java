@@ -1,5 +1,6 @@
 package com.sesac.aibackend.security;
 
+import com.sesac.aibackend.domain.OAuthProvider;
 import com.sesac.aibackend.domain.User;
 import com.sesac.aibackend.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -7,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -37,14 +39,34 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             HttpServletResponse response,
             Authentication authentication) throws IOException {
 
+
+        if (!(authentication instanceof OAuth2AuthenticationToken oauthToken)) {
+            throw new IllegalArgumentException("Unsupported authentication type: " + authentication.getClass());
+        }
+        String registrationId = oauthToken.getAuthorizedClientRegistrationId();
+
+
         OidcUser oidcUser = (OidcUser) authentication.getPrincipal();
         String email = oidcUser.getEmail();
         // OIDC sub: 구글이 보증하는 불변 고유 식별자. 이메일과 달리 변경·재사용되지 않습니다.
         String providerId = oidcUser.getSubject();
 
+        User user;
+
         // (provider, providerId)로 우리 DB 사용자를 조회하거나, 처음이면 신규 생성
-        User user = userRepository.findByProviderAndProviderId("GOOGLE", providerId)
-                .orElseGet(() -> userRepository.save(User.oauthUser(email, providerId)));
+        switch (registrationId) {
+            case "google":
+                user = userRepository.findByProviderAndProviderId(OAuthProvider.GOOGLE, providerId)
+                        .orElseGet(() -> userRepository.save(User.oauthUser(email, providerId, OAuthProvider.GOOGLE)));
+                break;
+            case "kakao":
+                user = userRepository.findByProviderAndProviderId(OAuthProvider.KAKAO, providerId)
+                        .orElseGet(() -> userRepository.save(User.oauthUser(email, providerId, OAuthProvider.KAKAO)));
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported registrationId: " + registrationId);
+        }
+
 
         // 폼 로그인과 동일한 방식으로 앱 자체 JWT 발급
         String token = jwtUtil.generate(user.getUsername(), user.getRole().name());

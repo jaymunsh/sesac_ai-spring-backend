@@ -40,8 +40,9 @@ public class User {
 
     /** 인증 출처: "LOCAL"(폼 가입) 또는 "GOOGLE"(소셜 로그인). */
     @Builder.Default
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String provider = "LOCAL";
+    private OAuthProvider provider = OAuthProvider.LOCAL;
 
     /** 소셜 공급자의 안정적 고유 식별자(OIDC sub). LOCAL 사용자는 NULL. */
     @Column(name = "provider_id", length = 255)
@@ -54,12 +55,12 @@ public class User {
      * 구글이 보증하는 불변 식별자(sub)를 providerId에 저장합니다.
      * 이로써 이 계정은 폼 로그인(/login)으로는 인증될 수 없고 구글 로그인만 가능합니다.
      */
-    public static User oauthUser(String email, String providerId) {
+    public static User oauthUser(String email, String providerId, OAuthProvider providerType) {
         return User.builder()
                 .username(email)
                 .passwordHash(null)
                 .role(Role.USER)
-                .provider("GOOGLE")
+                .provider(providerType)
                 .providerId(providerId)
                 .build();
     }
