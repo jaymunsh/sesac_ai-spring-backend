@@ -76,7 +76,7 @@ Spring Boot 3.5와 Spring Security 6, Spring Data JPA를 기반으로 구축된 
 
 ---
 
-#### 3. OAuth 2.0 & OIDC 전체 로그인 및 처리 흐름
+#### OAuth 2.0 & OIDC 전체 로그인 및 처리 흐름
 
 * **Step 1: 로그인 요청 시작 (Frontend → Backend)**
   * 사용자가 프런트엔드 화면에서 소셜 로그인 버튼을 클릭하면 브라우저 주소창이 백엔드가 가로채는 주소로 이동합니다. 백엔드 내부의 **`OAuth2AuthorizationRequestRedirectFilter`** 필터가 이 요청을 가로채어 다음 단계인 리다이렉트 URL을 만들 준비를 합니다.
@@ -110,7 +110,7 @@ Spring Boot 3.5와 Spring Security 6, Spring Data JPA를 기반으로 구축된 
 
 ---
 
-### 4. API 및 프로바이더 정보 출처 안내
+#### API 및 프로바이더 정보 출처 안내
 
 #### Spring Security 기본 탑재 프로바이더 (CommonOAuth2Provider)
 * Spring Security는 자주 사용되는 글로벌 로그인 서비스를 내장 설정으로 탑재하고 있습니다.
