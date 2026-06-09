@@ -55,6 +55,23 @@ Spring Boot 3.5와 Spring Security 6, Spring Data JPA를 기반으로 구축된 
     * 모든 API 요청에 대해 인증 상태를 검증하는 커스텀 필터 `JwtAuthenticationFilter` 구현.
     * JWT를 해석하여 Security Context에 로드함으로써 폼 로그인 및 소셜 로그인 사용자를 통일된 인증 모델로 관리.
 
+### Day 5
+* **학습 목표**: 시스템 통합(Spring Boot, Python, React) 및 문서 기반 질의(RAG) 구현
+* **구현 내용**:
+  * **FastAPI 연동을 위한 WebClient 설정 (`WebClientConfig`)**:
+    * Spring Boot에서 Python AI 백엔드(FastAPI)와의 리액티브 통신을 위해 `WebClient` 빈을 구성하고, 외부 API 호출 지연을 방지하기 위해 50초 연결 및 응답 타임아웃을 설정했습니다.
+  * **FastAPI 연동용 클라이언트 서비스 구현**:
+    * [PythonChatClient](file:///Users/sunghyuk/IdeaProjects/ai-backend/src/main/java/com/sesac/aibackend/service/PythonChatClient.java): 기본 AI 채팅 서버(`/chat`) 호출을 위한 클라이언트를 구현했습니다.
+    * [PythonRagClient](file:///Users/sunghyuk/IdeaProjects/ai-backend/src/main/java/com/sesac/aibackend/service/PythonRagClient.java): PDF 문서를 멀티파트로 받아 FastAPI로 업로드하는 `/rag/ingest` 및 CrewAI 기반 RAG 질의를 처리하는 `/rag/chat` 연동 클라이언트를 개발했습니다.
+  * **비즈니스 로직 및 API 컨트롤러 구축**:
+    * [RagController](file:///Users/sunghyuk/IdeaProjects/ai-backend/src/main/java/com/sesac/aibackend/controller/RagController.java): PDF 파일을 받아 벡터 DB에 적재하는 API와 해당 문서 기반으로 질의응답 및 이력을 저장하는 `/rag` 엔드포인트를 구현했습니다.
+    * [AdminController](file:///Users/sunghyuk/IdeaProjects/ai-backend/src/main/java/com/sesac/aibackend/controller/AdminController.java): 관리자(`ADMIN`) 권한을 가진 계정만 접근할 수 있는 회원 목록 조회, 사용자 역할(Role) 수정, 그리고 회원과 연결된 FK 제약 대화 로그를 선삭제하는 사용자 관리 API를 개발했습니다 (`@PreAuthorize("hasRole('ADMIN')")` 및 SecurityConfig 설정 적용).
+  * **데이터 모델 및 인프라 개선**:
+    * [ChatLogService](file:///Users/sunghyuk/IdeaProjects/ai-backend/src/main/java/com/sesac/aibackend/service/ChatLogService.java): 대화 기록 저장 시 유저 ID 대신 로그인된 username을 기준으로 조회하여 로그를 저장하도록 로직을 변경하였습니다.
+    * [ChatLogController](file:///Users/sunghyuk/IdeaProjects/ai-backend/src/main/java/com/sesac/aibackend/controller/ChatLogController.java): REST API를 통한 수동 대화 생성 요청 엔드포인트를 주석 처리하여, AI 프록시를 통해서만 로그가 생성되도록 통제했습니다.
+  * **통합 예외 처리 (`GlobalExceptionHandler`)**:
+    * API 요청 바디 유효성 검증 오류(`@Valid`, `@Pattern` 등), 연동 에러, 존재하지 않는 리소스 조회(`NotFoundException`) 등의 상황에 대비해 중앙 집중형 예외 처리 시스템을 도입하였습니다.
+
 ---
 
 ### OAuth 2.0 구글 & 카카오 로그인 통합 및 상세 아키텍처
