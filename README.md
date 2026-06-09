@@ -102,7 +102,7 @@ Spring Boot 3.5와 Spring Security 6, Spring Data JPA를 기반으로 구축된 
   * 소셜 인증이 최종 완료되면 [SecurityConfig.java](file:///Users/sunghyuk/IdeaProjects/ai-backend/src/main/java/com/sesac/aibackend/security/SecurityConfig.java)의 성공 핸들러 지정을 거쳐 [OAuth2LoginSuccessHandler.java](file:///Users/sunghyuk/IdeaProjects/ai-backend/src/main/java/com/sesac/aibackend/security/OAuth2LoginSuccessHandler.java)의 **`onAuthenticationSuccess`** 메서드가 자동으로 구동됩니다.
   * `OAuth2AuthenticationToken` 캐스팅을 통해 로그인 공급자 아이디(`registrationId`)를 확보하고 분기 처리를 탑니다. `OidcUser`로부터 공통 식별값인 `getSubject()`와 이메일 주소 `getEmail()`을 추출합니다.
   * **구글**: `registrationId`가 `"google"`이므로 [UserRepository.java](file:///Users/sunghyuk/IdeaProjects/ai-backend/src/main/java/com/sesac/aibackend/repository/UserRepository.java)의 `findByProviderAndProviderId` 메소드에 `OAuthProvider.GOOGLE`을 넘겨 유저를 식별하고 처음 로그인 시 `User.oauthUser` 정적 팩토리 메서드를 호출하여 데이터베이스에 저장합니다.
-  * **카카오**: `registrationId`가 `"kakao"`이므로 `OAuthProvider.KAKAO`를 넘겨 유저를 식별하고 저장합니다. (사용자가 카카오 로그인 시 이메일 동의를 거부하는 등 이메일이 null로 유입되는 상황에 대비해 `kakao_{providerId}@kakao.com` 형태로 가상 이메일을 부여하는 방어 코드가 작동합니다.)
+  * **카카오**: `registrationId`가 `"kakao"`이므로 `OAuthProvider.KAKAO`를 넘겨 유저를 식별하고 저장합니다.
 
 * **Step 6: 백엔드 자체 JWT 토큰 발행 및 프런트엔드 복귀 (Backend → Frontend)**
   * 데이터베이스 연동이 완료되어 유저 인프라가 확인되면, 백엔드 전용 API 토큰을 발급하여 프런트엔드 화면으로 복귀시킵니다.
